@@ -1,19 +1,48 @@
-const mongoose = require('mongoose');
 
-const financeSchema = new mongoose.Schema({
-  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'Rider', required: true },
-  balance: { type: Number, default: 0 },
-  trend: [Number], // Store weekly/monthly earnings for the graph
-  recentPayouts: [{
-    payName: String,
-    datePayed: { type: Date, default: Date.now },
-    ammount: Number
-  }],
-  transactionHistory: [{
-    transType: { type: String, enum: ['Credit', 'Debit'] },
-    ammount: Number,
-    date: { type: Date, default: Date.now }
-  }]
-}, { timestamps: true });
 
-module.exports = mongoose.model('Finance', financeSchema);
+const { DataTypes } = require("sequelize");
+const { sequelize } = require("../database/db");
+
+const Finance = sequelize.define("Finance", {
+
+  id: {
+    type: DataTypes.INTEGER,
+    autoIncrement: true,
+    primaryKey: true
+  },
+
+  userId: {
+    type: DataTypes.STRING,
+    allowNull: false
+  },
+
+  balance: {
+    type: DataTypes.FLOAT,
+    defaultValue: 0
+  },
+
+  trend: {
+    type: DataTypes.JSON
+  },
+
+  recentPayouts: {
+    type: DataTypes.JSON
+  },
+
+  transactionHistory: {
+    type: DataTypes.JSON
+  }
+
+}, { timestamps: true ,
+
+  
+    tableName: 'Finances',
+   
+    createdAt: 'created_at',
+    updatedAt: 'updated_at',
+    underscored: true,
+ 
+  
+});
+
+module.exports = Finance;

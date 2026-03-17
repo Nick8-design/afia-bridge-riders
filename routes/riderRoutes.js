@@ -1,19 +1,19 @@
 const express = require('express');
 const router = express.Router();
 const upload = require('../middleware/upload');
-
-const { deleteMyAccount } = require('../controllers/riderController');
-
+const { protect } = require('../middleware/auth');
 
 
 const { 
+    deleteMyAccount,
     registerTransporter,
-     loginRider,
-      fetchUserData, 
-    updateUserInformation 
+    loginRider,
+    fetchUserData, 
+    updateUserInformation,
+    getMyFinance, 
+    credit,
+    withdraw
 } = require('../controllers/riderController');
-const { protect } = require('../middleware/auth');
-
 
 
 router.delete('/delete-account', protect, deleteMyAccount);
@@ -22,26 +22,27 @@ router.delete('/delete-account', protect, deleteMyAccount);
 router.post('/register', registerTransporter);
 router.post('/login', loginRider);
 
-
+// Dashboard & Profile
 router.get('/dashboard', protect, fetchUserData);
 router.put('/update-profile', protect, updateUserInformation);
 
+// Finance (Make sure these exist in your controller)
+router.get('/finance', protect, getMyFinance);
+router.post('/finance/credit', protect, credit);
+router.post('/finance/withdraw', protect, withdraw);
+
+// Image Upload
 router.post('/upload-image', protect, upload.single('image'), (req, res) => {
-  if (!req.file) {
-      return res.status(400).json({ message: "Please upload a file" });
-  }
+    if (!req.file) {
+        return res.status(400).json({ message: "Please upload a file" });
+    }
 
-  // This is the link that will display the image
-  const fileUrl = `${req.protocol}://${req.get('host')}/uploads/${req.file.filename}`;
+    const fileUrl = `${req.protocol}://${req.get('host')}/uploads/${req.file.filename}`;
 
-  res.status(200).json({
-      success: true,
-      imageUrl: fileUrl
-  });
-
+    res.status(200).json({
+        success: true,
+        imageUrl: fileUrl
+    });
 });
-
-
-
 
 module.exports = router;

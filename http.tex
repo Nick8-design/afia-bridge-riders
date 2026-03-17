@@ -1,0 +1,79 @@
+1. Register Rider (POST /register)
+
+Body → raw JSON
+
+{
+  "role": "rider",
+  "full_name": "Brian Mwangi",
+  "email": "brian.rider1@example.com",
+  "password": "StrongPass123",
+  "phone_number": "+254712345678",
+  "gender": "male",
+  "address": "Westlands, Nairobi",
+  "national_id": "34567890",
+  "vehicle_type": "Motorcycle",
+  "plate_number": "KME 234B",
+  "driving_license_no": "DL-982374",
+  "license_expiry": "2030-08-15",
+  "emergency_contact": "+254711112222"
+}
+
+
+2. Login Rider (POST /login)
+
+{
+  "email": "nick@afyabridge.com",
+  "password": "securePassword123"
+}
+
+
+3. Update Profile (PUT /update-profile)
+
+Requires Authorization Bearer Token
+
+
+4. Upload Image (POST /upload-image)
+
+In Postman
+
+Body → form-data
+
+Key	Value	Type
+image	select file	File
+
+
+
+5. Delete Account (DELETE /delete-account)
+
+No body required.
+
+Headers:
+
+Authorization: Bearer YOUR_TOKEN
+
+
+6. Dashboard (GET /dashboard)
+
+Headers:
+
+Authorization: Bearer YOUR_TOKEN
+
+
+
+admin 
+3 Verify Rider
+
+Endpoint
+
+PUT /api/admin/riders/{riderId}/verify
+
+Body example
+
+{
+  "id_verified": true,
+  "license_verified": true,
+  "approved_status": "approved",
+  "reason": "Documents verified successfully"
+}
+
+Response

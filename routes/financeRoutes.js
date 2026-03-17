@@ -9,10 +9,13 @@ const {
   getTransactions,
   getRecentPayouts
 } = require('../controllers/financeController');
+
+
 const { serviceGuard } = require('../middleware/serviceGuard');
 const { protect } = require('../middleware/auth');
 
-// Fetch earnings summary (balance, trend, recent payouts, transaction history)
+
+
 router.get('/earning', protect, serviceGuard,getMyFinance);
 
 // Create finance doc for current rider (useful if none exists yet)

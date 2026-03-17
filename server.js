@@ -1,7 +1,70 @@
+// const express = require('express');
+// const app = express();
+// app.use(express.json());
+
+/**
+ * POST /api/verify-id
+ * Payload: { "name": "string", "idNumber": "string" }
+ */
+// app.post('/api/verify-id', (req, res) => {
+//     const { name, idNumber } = req.body;
+
+//     // 1. Basic Validation
+//     if (!name || !idNumber) {
+//         return res.status(400).json({
+//             success: false,
+//             message: "Validation Failed: Name and ID Number are required."
+//         });
+//     }
+
+//     // 2. Business Logic (Example: check length)
+//     if (idNumber.length < 6) {
+//         return res.status(422).json({
+//             success: false,
+//             message: "Invalid ID format."
+//         });
+//     }
+
+//     // 3. Success Response
+//     console.log(`Received verification for: ${name} (${idNumber})`);
+//     res.status(200).json({
+//         success: true,
+//         message: "Data received and validated successfully."
+//     });
+// });
+
+// app.post("/verify-id", (req, res) => {
+
+//     const { name, idNumber } = req.body;
+
+//     if (!name || !idNumber) {
+
+//         return res.status(400).json({
+//             success: false,
+//             message: "Missing required fields"
+//         });
+
+//     }
+
+//     return res.json({
+//         success: true,
+//         message: "ID verified successfully"
+//     });
+
+// });
+
+
+
+// // Handle 404
+// app.use((req, res) => res.status(404).json({ message: "Route not found" }));
+
+// const PORT = process.env.PORT || 3000;
+// app.listen(PORT, () => console.log(`Server active on port ${PORT}`));
+
 const express = require('express');
 const dotenv = require('dotenv');
 const cors = require('cors');
-const connectDB = require('./database/db');
+const { connectDB } = require('./database/db');
 
 const riderRoutes = require('./routes/riderRoutes');
 const orderRoutes = require('./routes/orderRoutes');
@@ -17,7 +80,7 @@ const adminRoutes = require('./routes/adminRoutes');
 // 1. Load Environment Variables
 dotenv.config();
 
-// 2. Connect to MongoDB Atlas
+
 connectDB();
 
 const app = express();

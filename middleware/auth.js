@@ -1,29 +1,52 @@
-const jwt = require('jsonwebtoken');
-const Rider = require('../models/Rider');
+const jwt = require('jsonwebtoken')
+const Rider = require('../models/Rider')
 
-const protect = async (req, res, next) => {
-    let token;
+const protect = async (req,res,next)=>{
 
-    if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
-        try {
-            // Get token from header (Bearer <token>)
-            token = req.headers.authorization.split(' ')[1];
+let token
 
-            // Verify token
-            const decoded = jwt.verify(token, process.env.JWT_SECRET);
+if(
+req.headers.authorization &&
+req.headers.authorization.startsWith('Bearer')
+){
 
-            // Get user from the token and attach to request (excluding password)
-            req.user = await Rider.findById(decoded.id).select('-password');
-            
-            next();
-        } catch (error) {
-            res.status(401).json({ success: false, message: 'Not authorized, token failed' });
-        }
-    }
+try{
 
-    if (!token) {
-        res.status(401).json({ success: false, message: 'Not authorized, no token' });
-    }
-};
+token = req.headers.authorization.split(' ')[1]
 
-module.exports = { protect };
+const decoded = jwt.verify(token,process.env.JWT_SECRET)
+
+req.user = await Rider.findByPk(decoded.id,{
+attributes:{ exclude:['password'] }
+})
+
+if(!req.user){
+return res.status(401).json({
+success:false,
+message:"User not found"
+})
+}
+
+next()
+
+}catch(error){
+
+return res.status(401).json({
+success:false,
+message:"Not authorized, token failed"
+})
+
+}
+
+}
+
+if(!token){
+return res.status(401).json({
+success:false,
+message:"Not authorized, no token"
+})
+}
+
+}
+
+module.exports = { protect }

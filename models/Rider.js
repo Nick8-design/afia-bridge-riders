@@ -1,50 +1,288 @@
-const mongoose = require('mongoose');
+const { DataTypes } = require("sequelize");
+const { sequelize } = require("../database/db");
 
-const riderSchema = new mongoose.Schema({
-  // Registration Data
-  userImg: { type: String },
-  fname: { type: String, required: true },
-  lname: { type: String, required: true },
-  phnNum: { type: String, required: true },
-  nationalId: { type: String, required: true },
-  email: { type: String, required: true, unique: true },
-  password: { type: String, required: true, select: false }, // Security: hide by default
-  vehicleType: { type: String },
-  plateNumber: { type: String },
-  drivingLicenseNo: { type: String },
-  lincesExpiryDate: { type: Date },
+const User = sequelize.define(
+  "User",
+  {
+    id: {
+      type: DataTypes.UUID,
+      defaultValue: DataTypes.UUIDV4,
+      primaryKey: true,
+    },
 
-  // Status & Verification
-  idVerified: { type: Boolean, default: false },
-  lincesVerified: { type: Boolean, default: false },
-  approvedStatus: { type: String, enum: ['Pending', 'Approved', 'Rejected'], default: 'Pending' },
-  dateApproved: { type: Date },
-  
-  // Dashboard & Real-time Info
-  onDuty: { type: Boolean, default: false },
-  currentTaskId: { type: mongoose.Schema.Types.ObjectId, ref: 'Order', default: null },
-  balance: { type: Number, default: 0 },
-  ordersMade: { type: Number, default: 0 },
+    role: {
+      type: DataTypes.ENUM("patient", "doctor", "pharmacist", "rider", "admin"),
+      allowNull: false,
+      index: true,
+    },
 
-  // Extra Profile Info (from updateUserInformation)
-  residencialAddress: { type: String },
-  emergencyContact: { type: String },
-  lastSignedIn: { type: Date },
-  // Account State (admin control)
-accountStatus: {
-  type: String,
-  enum: ['Active', 'Suspended', 'Locked'],
-  default: 'Active'
-},
-statusReason: { type: String, default: '' },
+    full_name: {
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
 
-// Verification metadata
-verifiedByAdmin: { type: Boolean, default: false },
-verifiedAt: { type: Date }
- 
-}, { timestamps: true });
+    email: {
+      type: DataTypes.STRING,
+      allowNull: false,
+      unique: true,
+    },
 
-module.exports = mongoose.model('Rider', riderSchema);
+    password_hash: {
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
 
+    phone_number: {
+      type: DataTypes.STRING,
+      unique: true,
+    },
 
- // isLoggedIn: { type: Boolean, default: false }
+    profile_image: {
+      type: DataTypes.STRING,
+    },
+
+    initials: {
+      type: DataTypes.STRING,
+    },
+
+    is_active: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: true,
+    },
+
+    is_verified: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false,
+    },
+
+    two_factor_enabled: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false,
+    },
+
+    two_factor_method: {
+      type: DataTypes.ENUM("sms", "email", "app"),
+      defaultValue: "sms",
+    },
+
+    two_factor_phone: {
+      type: DataTypes.STRING,
+    },
+
+    last_password_change: {
+      type: DataTypes.DATE,
+    },
+
+    last_login: {
+      type: DataTypes.DATE,
+    },
+
+    account_status: {
+      type: DataTypes.ENUM("active", "suspended", "locked", "disabled"),
+      defaultValue: "active",
+    },
+
+    status_reason: {
+      type: DataTypes.STRING,
+    },
+
+    bio: {
+      type: DataTypes.TEXT,
+    },
+
+    gender: {
+      type: DataTypes.STRING,
+    },
+
+    date_of_birth: {
+      type: DataTypes.STRING,
+    },
+
+    age: {
+      type: DataTypes.INTEGER,
+    },
+
+    blood_type: {
+      type: DataTypes.STRING,
+    },
+
+    address: {
+      type: DataTypes.STRING,
+    },
+
+    provider_sharing: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: true,
+    },
+
+    research_opt_in: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false,
+    },
+
+    emergency_contacts: {
+      type: DataTypes.JSON,
+    },
+
+    allergies: {
+      type: DataTypes.JSON,
+    },
+
+    surgeries: {
+      type: DataTypes.JSON,
+    },
+
+    visits: {
+      type: DataTypes.JSON,
+    },
+
+    conditions: {
+      type: DataTypes.JSON,
+    },
+
+    documents: {
+      type: DataTypes.JSON,
+    },
+
+    specialty: {
+      type: DataTypes.STRING,
+    },
+
+    kmpdc_license: {
+      type: DataTypes.STRING,
+    },
+
+    hospital: {
+      type: DataTypes.STRING,
+    },
+
+    consultation_fee: {
+      type: DataTypes.FLOAT,
+    },
+
+    allow_video_consultations: {
+      type: DataTypes.BOOLEAN,
+    },
+
+    allow_in_person_consultations: {
+      type: DataTypes.BOOLEAN,
+    },
+
+    working_hours: {
+      type: DataTypes.JSON,
+    },
+
+    slot_duration: {
+      type: DataTypes.INTEGER,
+    },
+
+    auto_confirm_appointments: {
+      type: DataTypes.BOOLEAN,
+    },
+
+    rating: {
+      type: DataTypes.FLOAT,
+      defaultValue: 0,
+    },
+
+    total_reviews: {
+      type: DataTypes.INTEGER,
+      defaultValue: 0,
+    },
+
+    verification_status: {
+      type: DataTypes.ENUM(
+        "pending_verification",
+        "verified",
+        "rejected"
+      ),
+    },
+
+    verified_at: {
+      type: DataTypes.DATE,
+    },
+
+    verified_by: {
+      type: DataTypes.STRING,
+    },
+
+    national_id: {
+      type: DataTypes.STRING,
+    },
+
+    vehicle_type: {
+      type: DataTypes.STRING,
+    },
+
+    plate_number: {
+      type: DataTypes.STRING,
+    },
+
+    driving_license_no: {
+      type: DataTypes.STRING,
+    },
+
+    license_expiry: {
+      type: DataTypes.DATE,
+    },
+
+    id_verified: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false,
+    },
+
+    license_verified: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false,
+    },
+
+    approved_status: {
+      type: DataTypes.ENUM("pending", "approved", "rejected"),
+    },
+
+    date_approved: {
+      type: DataTypes.DATE,
+    },
+
+    on_duty: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false,
+    },
+
+    emergency_contact: {
+      type: DataTypes.STRING,
+    },
+
+    orders_made: {
+      type: DataTypes.INTEGER,
+      defaultValue: 0,
+    },
+
+    verified_by_admin: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false,
+    },
+
+    pharmacy_id: {
+      type: DataTypes.UUID,
+    },
+
+    created_at: {
+      type: DataTypes.DATE,
+      allowNull: false,
+    },
+
+    updated_at: {
+      type: DataTypes.DATE,
+      allowNull: false,
+    },
+  },
+  {
+    tableName: "users",
+    timestamps: true,
+    createdAt: "created_at",
+    updatedAt: "updated_at"
+  }
+);
+
+module.exports = User;
