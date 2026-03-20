@@ -76,6 +76,7 @@ const { errorHandler, notFound } = require('./middleware/errorMiddleware');
 const logger = require('./middleware/logger');
 const adminRoutes = require('./routes/adminRoutes');
 
+const User = require('./models/Rider');
 
 // 1. Load Environment Variables
 dotenv.config();
@@ -95,6 +96,55 @@ app.use('/uploads', express.static('uploads'));
 
 app.get('/ping', (req, res) => {
   res.send('Afya Bridge Rider API is Live and Running!');
+});
+
+// Verification Check Endpoint
+app.post('/check-verification', async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    // 1. Basic Validation
+    if (!email) {
+      return res.status(400).json({
+        success: false,
+        message: "Email is required."
+      });
+    }
+
+   
+
+    
+    const user = await User.findOne({
+      where: { email: email.toLowerCase() },
+      attributes: ['full_name', 'email', 'is_verified', 'approved_status']
+    });
+
+    // 3. Check if user exists
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found."
+      });
+    }
+
+    // 4. Return Verification Status
+    res.status(200).json({
+      success: true,
+      data: {
+        name: user.full_name,
+        email: user.email,
+        is_verified: user.is_verified,
+        approved: user.approved_status
+      }
+    });
+
+  } catch (error) {
+    console.error('Verification Check Error:', error);
+    res.status(500).json({
+      success: false,
+      message: "Server Error during verification check."
+    });
+  }
 });
 
 
