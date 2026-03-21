@@ -17,6 +17,7 @@ const {
   markDelivered,
   cancelOrder,
   updateOrderDetails,
+  getDeliveredByRider,
   getActiveTask
 } = require('../controllers/orderController');
 
@@ -39,7 +40,12 @@ router.put('/cancel/:orderId', protect,serviceGuard, cancelOrder);
 router.get('/active', protect, serviceGuard, getActiveTask);
 router.put('/update/:orderId', protect,serviceGuard, updateOrderDetails);
 
-
+router.get(
+  '/delivered',
+  protect,
+  serviceGuard,
+  getDeliveredByRider
+);
 
 
 module.exports = router;

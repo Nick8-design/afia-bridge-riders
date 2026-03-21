@@ -72,8 +72,12 @@ exports.registerTransporter = async (req, res) => {
     const rider = await User.create({
       ...req.body,
       role: "rider",
+      approved_status:"pending",
       password_hash: hashed // Matching your model's field name
     });
+
+  
+
     await Wallet.create({
       id: uuidv4(),
       user_id: rider.id,
@@ -82,6 +86,8 @@ exports.registerTransporter = async (req, res) => {
       recent_payouts: [],
       transaction_history: []
     });
+
+
     res.status(201).json({ success: true, data: rider });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });

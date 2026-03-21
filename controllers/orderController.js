@@ -239,6 +239,32 @@ exports.markDelivered = async (req, res) => {
 /*
 9) GET ACCEPTED TASKS FOR CURRENT RIDER
 */
+exports.getDeliveredByRider = async (req, res) => {
+  try {
+    const riderId = req.user.id;
+
+    const tasks = await DeliveryTask.findAll({
+      where: {
+        rider_id: riderId,
+        status: 'delivered',
+        accept_status: true
+      },
+      order: [['updated_at', 'DESC']]
+    });
+
+    return res.json({
+      success: true,
+      count: tasks.length,
+      data: tasks
+    });
+
+  } catch (err) {
+    return res.status(500).json({
+      success: false,
+      message: err.message
+    });
+  }
+};
 
       exports.getActiveTask = async (req, res) => {
         try {
