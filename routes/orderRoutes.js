@@ -16,7 +16,8 @@ const {
   markInTransit,
   markDelivered,
   cancelOrder,
-  updateOrderDetails
+  updateOrderDetails,
+  getActiveTask
 } = require('../controllers/orderController');
 
 const { protect } = require('../middleware/auth');
@@ -35,8 +36,7 @@ router.put('/accept/:orderId', protect,serviceGuard, acceptOrder);
 router.put('/in-transit/:orderId', protect,serviceGuard, markInTransit);
 router.put('/deliver/:orderId', protect,serviceGuard, markDelivered);
 router.put('/cancel/:orderId', protect,serviceGuard, cancelOrder);
-
-
+router.get('/active', protect, serviceGuard, getActiveTask);
 router.put('/update/:orderId', protect,serviceGuard, updateOrderDetails);
 
 

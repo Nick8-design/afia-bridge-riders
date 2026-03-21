@@ -235,3 +235,31 @@ exports.markDelivered = async (req, res) => {
     res.status(500).json({ success: false, message: err.message });
   }
 };
+
+/*
+9) GET ACCEPTED TASKS FOR CURRENT RIDER
+*/
+
+      exports.getActiveTask = async (req, res) => {
+        try {
+          const task = await DeliveryTask.findOne({
+            where: {
+              rider_id: req.user.id,
+              accept_status: true,
+              status: ['assigned', 'accepted', 'picked_up', 
+      'out_for_delivery'
+]
+            },
+            order: [['created_at', 'DESC']]
+          });
+      
+          if (!task) {
+            return res.json({ success: true, data: null });
+          }
+      
+          res.json({ success: true, data: task });
+      
+        } catch (err) {
+          res.status(500).json({ success: false, message: err.message });
+        }
+      };
