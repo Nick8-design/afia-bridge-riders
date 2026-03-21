@@ -23,7 +23,7 @@ const { protect } = require('../middleware/auth');
 const { serviceGuard } = require('../middleware/serviceGuard');
 
 
-router.post('/create', protect,serviceGuard, createOrder);
+// router.post('/create', protect,serviceGuard, createOrder);
 
 router.get('/incoming', protect,serviceGuard, getIncomingDelivery);
 
