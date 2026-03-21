@@ -1,12 +1,74 @@
 const DeliveryTask = require('../models/DeliveryTask');
 const Finance = require('../models/Finance');
-
+const { Op } = require('sequelize');
 /*
 Helper: check required fields
 */
 const requireFields = (body, fields = []) => {
   return fields.filter(f => body[f] === undefined || body[f] === null || body[f] === '');
 };
+
+
+
+
+
+exports.getDeliveryStats = async (req, res) => {
+  try {
+    const riderId = req.user.id;
+
+    const now = new Date();
+
+    // TODAY
+    const startOfToday = new Date();
+    startOfToday.setHours(0, 0, 0, 0);
+
+    // WEEK (last 7 days)
+    const startOfWeek = new Date();
+    startOfWeek.setDate(now.getDate() - 7);
+
+    // LAST 28 DAYS
+    const last28Days = new Date();
+    last28Days.setDate(now.getDate() - 28);
+
+    // Query ALL delivered for this rider once
+    const tasks = await DeliveryTask.findAll({
+      where: {
+        rider_id: riderId,
+        status: 'delivered',
+        accept_status: true
+      }
+    });
+
+    let today = 0;
+    let week = 0;
+    let last28 = 0;
+
+    tasks.forEach(task => {
+      const date = new Date(task.delivered_at || task.updated_at);
+
+      if (date >= startOfToday) today++;
+      if (date >= startOfWeek) week++;
+      if (date >= last28Days) last28++;
+    });
+
+    return res.json({
+      success: true,
+      data: {
+        today,
+        week,
+        last28Days: last28,
+        total: tasks.length
+      }
+    });
+
+  } catch (err) {
+    return res.status(500).json({
+      success: false,
+      message: err.message
+    });
+  }
+};
+
 
 /*
 2) RIDER HISTORY
@@ -154,6 +216,10 @@ exports.getIncomingDelivery = async (req, res) => {
     res.status(500).json({ success: false, message: err.message });
   }
 };
+
+
+
+
 
 /*
 4) ACCEPT ORDER
