@@ -8,7 +8,8 @@ const DeliveryTask = require("../models/DeliveryTask"); // Updated from Order
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 
-
+const Wallet = require('../models/Finance');
+const { v4: uuidv4 } = require('uuid');
 
 
 
@@ -73,7 +74,14 @@ exports.registerTransporter = async (req, res) => {
       role: "rider",
       password_hash: hashed // Matching your model's field name
     });
-
+    await Wallet.create({
+      id: uuidv4(),
+      user_id: rider.id,
+      balance: 0,
+      trend: [],
+      recent_payouts: [],
+      transaction_history: []
+    });
     res.status(201).json({ success: true, data: rider });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
