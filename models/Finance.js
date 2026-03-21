@@ -1,48 +1,55 @@
-
-
-const { DataTypes } = require("sequelize");
+const { DataTypes } = require('sequelize');
 const { sequelize } = require("../database/db");
 
-const Finance = sequelize.define("Finance", {
-
+const Wallet = sequelize.define('Wallet', {
   id: {
-    type: DataTypes.INTEGER,
-    autoIncrement: true,
+    type: DataTypes.UUID,
     primaryKey: true
   },
-
-  userId: {
-    type: DataTypes.STRING,
-    allowNull: false
+  user_id: {
+    type: DataTypes.UUID,
+    allowNull: false,
+    unique: true
   },
-
   balance: {
-    type: DataTypes.FLOAT,
+    type: DataTypes.DECIMAL(12, 2),
+    allowNull: false,
     defaultValue: 0
+  },
+  currency: {
+    type: DataTypes.STRING(10),
+    defaultValue: 'KES'
+  },
+  is_active: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: true
+  },
+  payout_method: {
+    type: DataTypes.ENUM('mpesa', 'bank'),
+    allowNull: true
+  },
+  payout_account: {
+    type: DataTypes.STRING(100),
+    allowNull: true
   },
 
   trend: {
-    type: DataTypes.JSON
+    type: DataTypes.JSON,
+    allowNull: true
   },
-
-  recentPayouts: {
-    type: DataTypes.JSON
+  recent_payouts: {
+    type: DataTypes.JSON,
+    allowNull: true
   },
-
-  transactionHistory: {
-    type: DataTypes.JSON
+  transaction_history: {
+    type: DataTypes.JSON,
+    allowNull: true
   }
 
-}, { timestamps: true ,
-
-  
-    tableName: 'Finances',
-   
-    createdAt: 'created_at',
-    updatedAt: 'updated_at',
-    underscored: true,
- 
-  
+}, {
+  tableName: 'wallets',
+  timestamps: true,
+  underscored: true
 });
 
-module.exports = Finance;
+module.exports = Wallet;
