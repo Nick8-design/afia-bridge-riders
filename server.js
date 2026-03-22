@@ -75,11 +75,40 @@ const { protect } = require('./middleware/auth');
 const { errorHandler, notFound } = require('./middleware/errorMiddleware');
 const logger = require('./middleware/logger');
 const adminRoutes = require('./routes/adminRoutes');
-
+const deliveryroutes = require('./routes/deliveryRoutes.js');
 const User = require('./models/Rider');
 
 // 1. Load Environment Variables
 dotenv.config();
+
+const DeliveryTask = require("./models/DeliveryTask.js");
+const Order = require("./models/Order");
+// const User = require("../models/Rider");
+const Pharmacy = require("./models/Pharmacies");
+
+
+/* ================= RELATIONSHIPS ================= */
+
+// Delivery → Order
+DeliveryTask.belongsTo(Order, {
+  foreignKey: "order_id",
+  as: "order"
+});
+
+// Order → Patient
+Order.belongsTo(User, {
+  foreignKey: "patient_id",
+  as: "patient"
+});
+
+// Order → Pharmacy
+Order.belongsTo(Pharmacy, {
+  foreignKey: "pharmacy_id",
+  as: "pharmacy"
+});
+
+
+
 
 
 connectDB();
@@ -154,6 +183,7 @@ app.use('/api/orders', orderRoutes);
 app.use('/api/support', supportRoutes);
 app.use('/api/finance', financeRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/delivery', deliveryroutes);
 
 
 app.use(notFound);
