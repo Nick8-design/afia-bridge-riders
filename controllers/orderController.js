@@ -10,6 +10,45 @@ const requireFields = (body, fields = []) => {
 
 
 
+exports.markPickedUp = async (req, res) => {
+  try {
+    const task = await DeliveryTask.findByPk(req.params.orderId);
+
+    if (!task || task.rider_id !== req.user.id) {
+      return res.status(403).json({
+        success: false,
+        message: 'Unauthorized'
+      });
+    }
+
+    const {
+      package_sealed,
+      labeled_correctly,
+      verified_with_pharmacy
+    } = req.body;
+
+    await task.update({
+      package_sealed,
+      labeled_correctly,
+      verified_with_pharmacy,
+      pickup_time: new Date(),
+      status: 'picked_up'
+    });
+
+    return res.json({
+      success: true,
+      message: 'Package picked successfully',
+      data: task
+    });
+
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      message: err.message
+    });
+  }
+};
+
 
 
 exports.getDeliveryStats = async (req, res) => {

@@ -19,7 +19,8 @@ const {
   updateOrderDetails,
   getDeliveredByRider,
   getActiveTask,
-  getDeliveryStats
+  getDeliveryStats,
+  markPickedUp
 } = require('../controllers/orderController');
 
 const { protect } = require('../middleware/auth');
@@ -48,5 +49,6 @@ router.get(
   getDeliveredByRider
 );
 
+router.put('/pickup/:orderId', protect, serviceGuard, markPickedUp);
 
 module.exports = router;
