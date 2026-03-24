@@ -32,12 +32,32 @@ router.post('/finance/credit', protect, credit);
 router.post('/finance/withdraw', protect, withdraw);
 
 // Image Upload
+// router.post('/upload-image', protect, upload.single('image'), (req, res) => {
+//     if (!req.file) {
+//         return res.status(400).json({ message: "Please upload a file" });
+//     }
+
+//     const fileUrl = `${req.protocol}://${req.get('host')}/uploads/${req.file.filename}`;
+
+//     res.status(200).json({
+//         success: true,
+//         imageUrl: fileUrl
+//     });
+// });
+
 router.post('/upload-image', protect, upload.single('image'), (req, res) => {
+
     if (!req.file) {
-        return res.status(400).json({ message: "Please upload a file" });
+        return res.status(400).json({
+            success: false,
+            message: "Please upload a file"
+        });
     }
 
-    const fileUrl = `${req.protocol}://${req.get('host')}/uploads/${req.file.filename}`;
+    // 🔥 Get correct protocol (handles Render / proxies)
+    const protocol = req.headers['x-forwarded-proto'] || req.protocol || 'https';
+
+    const fileUrl = `${protocol}://${req.get('host')}/uploads/${req.file.filename}`;
 
     res.status(200).json({
         success: true,

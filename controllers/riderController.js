@@ -14,13 +14,6 @@ const { v4: uuidv4 } = require('uuid');
 
 
 
-
-
-
-
-
-
-
 /*
 DELETE ACCOUNT
 Removes all associated data for a specific user_id
@@ -30,7 +23,7 @@ exports.deleteMyAccount = async (req, res) => {
     const riderId = req.user.id;
 
     // Cleanup based on new user_id field name
-    await Finance.destroy({ where: { user_id: riderId } });
+    await Wallet.destroy({ where: { user_id: riderId } });
     await Notification.destroy({ where: { user_id: riderId } });
     await Issue.destroy({ where: { user_id: riderId } });
 
