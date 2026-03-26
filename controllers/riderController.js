@@ -227,27 +227,70 @@ exports.withdraw = async (req, res) => {
 FETCH DASHBOARD DATA
 */
 // Ensure it is "exports.fetchUserData" NOT "const fetchUserData"
-exports.fetchUserData = async (req, res) => { 
-    try {
-      const rider = await User.findOne({
-        where: {
-          id: req.user.id,
-          role: "rider"
-        }
-      });
+// exports.fetchUserData = async (req, res) => { 
+//     try {
+//       const rider = await User.findOne({
+//         where: {
+//           id: req.user.id,
+//           role: "rider"
+//         }
+//       });
   
+//       if (!rider) {
+//           return res.status(404).json({ success: false, message: "User not found" });
+//       }
+
+//       const notification_count = await Notification.findAll({
+//         where: {
+//           id: req.user.id,
+//           is_read: false
+//         }
+//       });
+
+
+  
+//       res.json({
+//         success: true,
+//         data: rider
+//       });
+//     } catch (err) {
+//       res.status(500).json({ success: false, message: err.message });
+//     }
+//   };
+
+exports.fetchUserData = async (req, res) => { 
+  try {
+      const rider = await User.findOne({
+          where: {
+              id: req.user.id,
+              role: "rider"
+          }
+      });
+
       if (!rider) {
           return res.status(404).json({ success: false, message: "User not found" });
       }
-  
-      res.json({
-        success: true,
-        data: rider
+
+      // Use .count() for efficiency
+      const unread_count = await Notification.count({
+          where: {
+              user_id: req.user.id, // Changed from id to user_id
+              is_read: false
+          }
       });
-    } catch (err) {
+
+      // Convert Sequelize instance to plain object to add new properties
+      const riderData = rider.get({ plain: true });
+      riderData.unread_notifications = unread_count;
+
+      res.json({
+          success: true,
+          data: riderData
+      });
+  } catch (err) {
       res.status(500).json({ success: false, message: err.message });
-    }
-  };
+  }
+};
 
 
   /*
