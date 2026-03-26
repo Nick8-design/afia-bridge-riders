@@ -95,6 +95,9 @@ exports.reportIssue = async (req, res) => {
     }
 };
 
+
+
+
 /*
 3) FETCH MY NOTIFICATIONS
 */
@@ -114,6 +117,82 @@ exports.fetchMyNotifications = async (req, res) => {
         res.status(500).json({ success: false, message: err.message });
     }
 };
+
+
+exports.markAsRead = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        const [updated] = await Notification.update(
+            { 
+                is_read: true, 
+                read_at: new Date() 
+            },
+            { 
+                where: { 
+                    id: id, 
+                    user_id: req.user.id 
+                } 
+            }
+        );
+
+        if (!updated) {
+            return res.status(404).json({ success: false, message: "Notification not found" });
+        }
+
+        res.json({ success: true, message: "Notification marked as read" });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+};
+
+
+exports.markAllRead = async (req, res) => {
+    try {
+        await Notification.update(
+            { 
+                is_read: true, 
+                read_at: new Date() 
+            },
+            { 
+                where: { 
+                    user_id: req.user.id, 
+                    is_read: false // Only update what isn't already read
+                } 
+            }
+        );
+
+        res.json({ success: true, message: "All notifications marked as read" });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+};
+
+
+exports.deleteNotification = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        const deleted = await Notification.destroy({
+            where: { 
+                id: id, 
+                user_id: req.user.id 
+            }
+        });
+
+        if (!deleted) {
+            return res.status(404).json({ success: false, message: "Notification not found" });
+        }
+
+        res.json({ success: true, message: "Notification deleted" });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+};
+
+
+
+
 
 /*
 4) ADMIN FETCH ALL ISSUES
