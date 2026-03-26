@@ -260,28 +260,23 @@ FETCH DASHBOARD DATA
 
 exports.fetchUserData = async (req, res) => { 
   try {
-      const rider = await User.findOne({
-          where: {
-              id: req.user.id,
-              role: "rider"
-          }
-      });
+      // Run both queries in parallel
+      const [rider, unreadCount] = await Promise.all([
+          User.findOne({ 
+              where: { id: req.user.id, role: "rider" } 
+          }),
+          Notification.count({ 
+              where: { user_id: req.user.id, is_read: false } 
+          })
+      ]);
 
       if (!rider) {
           return res.status(404).json({ success: false, message: "User not found" });
       }
 
-      // Use .count() for efficiency
-      const unread_count = await Notification.count({
-          where: {
-              user_id: req.user.id, // Changed from id to user_id
-              is_read: false
-          }
-      });
-
-      // Convert Sequelize instance to plain object to add new properties
+      // Merge the data
       const riderData = rider.get({ plain: true });
-      riderData.unread_notifications = unread_count;
+      riderData.unread_notifications = unreadCount;
 
       res.json({
           success: true,
@@ -291,7 +286,6 @@ exports.fetchUserData = async (req, res) => {
       res.status(500).json({ success: false, message: err.message });
   }
 };
-
 
   /*
 UPDATE PROFILE
