@@ -87,6 +87,15 @@ exports.registerTransporter = async (req, res) => {
 
     res.status(201).json({ success: true, data: rider });
   } catch (err) {
+
+    console.error("Sequelize Error:", err); 
+    if (err.name === 'SequelizeValidationError') {
+        return res.status(400).json({ 
+            success: false, 
+            message: "Validation failed", 
+            errors: err.errors.map(e => e.message) 
+        });
+    }
     res.status(500).json({ success: false, message: err.message });
   }
 };
