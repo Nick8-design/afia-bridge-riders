@@ -49,12 +49,15 @@ exports.deleteMyAccount = async (req, res) => {
 /*
 REGISTER RIDER
 */
+
+/*
+REGISTER RIDER WITH DOCUMENTS
+*/
 exports.registerTransporter = async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { email, password, documents } = req.body;
 
     const existing = await User.findOne({ where: { email } });
-
     if (existing) {
       return res.status(400).json({ success: false, message: "User already exists" });
     }
@@ -62,15 +65,17 @@ exports.registerTransporter = async (req, res) => {
     const salt = await bcrypt.genSalt(10);
     const hashed = await bcrypt.hash(password, salt);
 
+    // Create user with document array
     const rider = await User.create({
       ...req.body,
       role: "rider",
-      approved_status:"pending",
-      password_hash: hashed // Matching your model's field name
+      approved_status: "pending",
+      password_hash: hashed,
+      // If documents aren't provided, default to an empty array
+      documents: documents || [] 
     });
 
-  
-
+    // Create associated Wallet
     await Wallet.create({
       id: uuidv4(),
       user_id: rider.id,
@@ -80,12 +85,48 @@ exports.registerTransporter = async (req, res) => {
       transaction_history: []
     });
 
-
     res.status(201).json({ success: true, data: rider });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }
 };
+// exports.registerTransporter = async (req, res) => {
+//   try {
+//     const { email, password } = req.body;
+
+//     const existing = await User.findOne({ where: { email } });
+
+//     if (existing) {
+//       return res.status(400).json({ success: false, message: "User already exists" });
+//     }
+
+//     const salt = await bcrypt.genSalt(10);
+//     const hashed = await bcrypt.hash(password, salt);
+
+//     const rider = await User.create({
+//       ...req.body,
+//       role: "rider",
+//       approved_status:"pending",
+//       password_hash: hashed // Matching your model's field name
+//     });
+
+  
+
+//     await Wallet.create({
+//       id: uuidv4(),
+//       user_id: rider.id,
+//       balance: 0,
+//       trend: [],
+//       recent_payouts: [],
+//       transaction_history: []
+//     });
+
+
+//     res.status(201).json({ success: true, data: rider });
+//   } catch (err) {
+//     res.status(500).json({ success: false, message: err.message });
+//   }
+// };
 
 /*
 LOGIN RIDER
