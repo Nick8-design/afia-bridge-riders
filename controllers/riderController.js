@@ -89,13 +89,16 @@ exports.registerTransporter = async (req, res) => {
   } catch (err) {
 
     console.error("Sequelize Error:", err); 
-    if (err.name === 'SequelizeValidationError') {
-        return res.status(400).json({ 
-            success: false, 
-            message: "Validation failed", 
-            errors: err.errors.map(e => e.message) 
-        });
-    }
+    if (err.name === 'SequelizeUniqueConstraintError') {
+      return res.status(400).json({ 
+          success: false, 
+          message: "This email or phone number is already registered." 
+      });
+  }
+  
+
+
+    
     res.status(500).json({ success: false, message: err.message });
   }
 };
@@ -149,7 +152,7 @@ exports.loginRider = async (req, res) => {
     });
 
     if (!rider) {
-      return res.status(401).json({ success: false, message: "Invalid email or password" });
+      return res.status(401).json({ success: false, message: "Email not registered" });
     }
 
     const match = await bcrypt.compare(password, rider.password_hash);
@@ -158,13 +161,21 @@ exports.loginRider = async (req, res) => {
       return res.status(401).json({ success: false, message: "Invalid email or password" });
     }
 
+    if (rider. verification_status!=="verified" || rider.approved_status !== "approved") {
+      return res.status(403).json({ 
+        success: false, 
+        message: "Your account is still pending verification. Please wait for admin approval.",
+        status: rider.approved_status // Useful for the Android app to know the exact state
+      });
+    }
+
     // Using your model's timestamp fields
     await rider.update({ last_login: new Date() });
 
     const token = jwt.sign(
       { id: rider.id },
       process.env.JWT_SECRET,
-      { expiresIn: "30d" }
+      { expiresIn: "7d" }
     );
 
     res.json({
@@ -174,6 +185,7 @@ exports.loginRider = async (req, res) => {
       lastLogin: rider.last_login
     });
   } catch (err) {
+    console.error("Login Error:", err);
     res.status(500).json({ success: false, message: err.message });
   }
 };
