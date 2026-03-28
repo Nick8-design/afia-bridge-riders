@@ -393,3 +393,45 @@ exports.getMyFinance = async (req, res) => {
       });
     }
   };
+
+
+  /*
+CHANGE PASSWORD
+Verifies old password before updating to the new one
+*/
+exports.changePassword = async (req, res) => {
+  try {
+    const { old_password, new_password } = req.body;
+    const userId = req.user.id;
+
+    // 1. Fetch the user (explicitly including password_hash)
+    const user = await User.findByPk(userId);
+
+    if (!user) {
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
+
+    // 2. Compare old password with the stored hash
+    const isMatch = await bcrypt.compare(old_password, user.password_hash);
+    if (!isMatch) {
+      return res.status(401).json({ success: false, message: "Incorrect old password" });
+    }
+
+    // 3. Hash the new password
+    const salt = await bcrypt.genSalt(10);
+    const newHashedPassword = await bcrypt.hash(new_password, salt);
+
+    // 4. Update the user record
+    await user.update({
+      password_hash: newHashedPassword,
+      last_password_change: new Date()
+    });
+
+    res.json({
+      success: true,
+      message: "Password updated successfully"
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};

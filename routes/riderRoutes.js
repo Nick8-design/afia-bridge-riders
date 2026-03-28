@@ -12,9 +12,10 @@ const {
     updateUserInformation,
     getMyFinance, 
     credit,
-    withdraw
+    withdraw,
+    changePassword
 } = require('../controllers/riderController');
-
+router.put('/change-password', protect, changePassword);
 
 router.delete('/delete-account', protect, deleteMyAccount);
 
