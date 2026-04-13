@@ -209,34 +209,40 @@ exports.getRecentPayouts = async (req, res) => {
 };
 
 
+
 exports.getDailyEarnings = async (req, res) => {
   try {
-    const wallet = await getOrCreateWallet(req.user.id);
+    const wallet = await Wallet.findOne({ where: { user_id: req.user.id } });
+    
+    if (!wallet) {
+      return res.json({ success: true, data: [] });
+    }
 
     const history = wallet.transaction_history || [];
-
-    // Group earnings by date
     const dailyMap = {};
 
     history.forEach(tx => {
-      if (tx.type !== 'credit') return;
+      // 1. Match the exact key 'transType' and value 'Credit'
+      if (tx.transType !== 'Credit') return;
 
-      const date = new Date(tx.created_at).toISOString().split('T')[0];
+      // 2. Match the exact key 'date' saved in your helper
+      const dateVal = tx.date || tx.createdAt; 
+      if (!dateVal) return;
+
+      const date = new Date(dateVal).toISOString().split('T')[0];
 
       if (!dailyMap[date]) {
         dailyMap[date] = 0;
       }
 
-      dailyMap[date] += Number(tx.amount);
+      dailyMap[date] += Number(tx.amount || 0);
     });
 
-    // Convert to array format (better for frontend)
     const result = Object.keys(dailyMap).map(date => ({
       date,
       total: dailyMap[date]
     }));
 
-    // Sort by newest first
     result.sort((a, b) => new Date(b.date) - new Date(a.date));
 
     res.json({
@@ -251,3 +257,46 @@ exports.getDailyEarnings = async (req, res) => {
     });
   }
 };
+
+// exports.getDailyEarnings = async (req, res) => {
+//   try {
+//     const wallet = await getOrCreateWallet(req.user.id);
+
+//     const history = wallet.transaction_history || [];
+
+//     // Group earnings by date
+//     const dailyMap = {};
+
+//     history.forEach(tx => {
+//       if (tx.type !== 'credit') return;
+
+//       const date = new Date(tx.created_at).toISOString().split('T')[0];
+
+//       if (!dailyMap[date]) {
+//         dailyMap[date] = 0;
+//       }
+
+//       dailyMap[date] += Number(tx.amount);
+//     });
+
+//     // Convert to array format (better for frontend)
+//     const result = Object.keys(dailyMap).map(date => ({
+//       date,
+//       total: dailyMap[date]
+//     }));
+
+//     // Sort by newest first
+//     result.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+//     res.json({
+//       success: true,
+//       data: result
+//     });
+
+//   } catch (err) {
+//     res.status(500).json({
+//       success: false,
+//       message: err.message
+//     });
+//   }
+// };
