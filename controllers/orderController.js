@@ -1,6 +1,8 @@
 const DeliveryTask = require('../models/DeliveryTask');
-const Finance = require('../models/Finance');
-const { Op } = require('sequelize');
+const Finance = require('../models/Finance'); // Use Finance if that's your model name
+const Order = require('../models/Order');
+const Notification = require('../models/Notification');
+const { sequelize } = require("../database/db");
 /*
 Helper: check required fields
 */
@@ -10,44 +12,176 @@ const requireFields = (body, fields = []) => {
 
 
 
-exports.markPickedUp = async (req, res) => {
-  try {
-    const task = await DeliveryTask.findByPk(req.params.orderId);
 
-    if (!task || task.rider_id !== req.user.id) {
-      return res.status(403).json({
-        success: false,
-        message: 'Unauthorized'
-      });
+// Helper to ensure a wallet exists and update balance
+const updateWallet = async (userId, amount, reference, type, t) => {
+    let wallet = await Finance.findOne({ where: { user_id: userId }, transaction: t });
+    
+    if (!wallet) {
+        wallet = await Finance.create({
+            id: require('crypto').randomUUID(),
+            user_id: userId,
+            balance: 0,
+            transaction_history: []
+        }, { transaction: t });
     }
 
-    const {
-      package_sealed,
-      labeled_correctly,
-      verified_with_pharmacy
-    } = req.body;
-
-    await task.update({
-      package_sealed,
-      labeled_correctly,
-      verified_with_pharmacy,
-      pickup_time: new Date(),
-      status: 'picked_up'
+    const history = [...(wallet.transaction_history || [])];
+    history.unshift({
+        transType: type, // 'Credit' or 'Debit'
+        amount: Math.abs(amount),
+        reference: reference,
+        date: new Date()
     });
 
-    return res.json({
-      success: true,
-      message: 'Package picked successfully',
-      data: task
-    });
-
-  } catch (err) {
-    res.status(500).json({
-      success: false,
-      message: err.message
-    });
-  }
+    await wallet.update({
+        balance: parseFloat(wallet.balance) + parseFloat(amount),
+        transaction_history: history
+    }, { transaction: t });
+    
+    return wallet;
 };
+
+// Helper to create notifications
+const createNotify = async (userId, title, message, type, refId, t) => {
+    await Notification.create({
+        user_id: userId,
+        title,
+        message,
+        notification_type: type,
+        reference_id: refId,
+        channel: 'in_app'
+    }, { transaction: t });
+};
+
+exports.markPickedUp = async (req, res) => {
+    const t = await sequelize.transaction();
+    try {
+        const task = await DeliveryTask.findByPk(req.params.orderId, { transaction: t });
+        if (!task || task.rider_id !== req.user.id) {
+            await t.rollback();
+            return res.status(403).json({ success: false, message: 'Unauthorized' });
+        }
+
+        // Fetch Order to get Pharmacy and Patient details
+        const order = await Order.findByPk(task.order_id, { transaction: t });
+        if (!order) {
+            await t.rollback();
+            return res.status(404).json({ success: false, message: 'Original order not found' });
+        }
+
+        // 1. Debit Patient, Credit Pharmacy (Total Order Amount)
+        const orderAmount = parseFloat(order.total_amount || 0);
+        if (orderAmount > 0) {
+            // Remove money from Patient
+            await updateWallet(order.patient_id, -orderAmount, order.order_number, 'Debit', t);
+            // Send money to Pharmacy
+            await updateWallet(order.pharmacy_id, orderAmount, order.order_number, 'Credit', t);
+        }
+
+        // 2. Update Task Status
+        await task.update({
+            pickup_time: new Date(),
+            status: 'picked_up'
+        }, { transaction: t });
+
+        // 3. Notifications
+        await createNotify(order.patient_id, "Order Picked Up", `Your order ${order.order_number} is on the way.`, 'delivery', task.id, t);
+        await createNotify(order.pharmacy_id, "Payment Received", `Payment for order ${order.order_number} has been moved to your wallet.`, 'payment', order.id, t);
+
+        await t.commit();
+        res.json({ success: true, message: 'Picked up. Pharmacy credited.', data: task });
+    } catch (err) {
+        await t.rollback();
+        res.status(500).json({ success: false, message: err.message });
+    }
+};
+
+exports.markDelivered = async (req, res) => {
+    const t = await sequelize.transaction();
+    try {
+        const task = await DeliveryTask.findByPk(req.params.orderId, { transaction: t });
+        if (!task || task.rider_id !== req.user.id) {
+            await t.rollback();
+            return res.status(403).json({ success: false, message: 'Unauthorized' });
+        }
+
+        const order = await Order.findByPk(task.order_id, { transaction: t });
+
+        // 1. Credit Rider (Delivery Charges only)
+        const deliveryFee = parseFloat(task.charges || 0);
+        if (deliveryFee > 0) {
+            // Note: In a real system, you might debit the delivery fee from the patient 
+            // at pickup too, but here we credit the rider specifically at delivery.
+            await updateWallet(req.user.id, deliveryFee, task.package_number, 'Credit', t);
+        }
+
+        // 2. Update Statuses
+        await task.update({ status: 'delivered', delivered_at: new Date() }, { transaction: t });
+        if (order) {
+            await order.update({ status: 'delivered' }, { transaction: t });
+        }
+
+        // 3. Notifications
+        await createNotify(req.user.id, "Earnings Credited", `You earned KES ${deliveryFee} for delivery ${task.package_number}`, 'payment', task.id, t);
+        if (order) {
+            await createNotify(order.patient_id, "Delivery Confirmed", `Order ${order.order_number} has been delivered successfully.`, 'delivery', task.id, t);
+        }
+
+        await t.commit();
+        res.json({ success: true, message: 'Delivered. Rider credited.', data: task });
+    } catch (err) {
+        await t.rollback();
+        res.status(500).json({ success: false, message: err.message });
+    }
+};
+
+
+
+
+
+
+
+
+
+// exports.markPickedUp = async (req, res) => {
+//   try {
+//     const task = await DeliveryTask.findByPk(req.params.orderId);
+
+//     if (!task || task.rider_id !== req.user.id) {
+//       return res.status(403).json({
+//         success: false,
+//         message: 'Unauthorized'
+//       });
+//     }
+
+//     const {
+//       package_sealed,
+//       labeled_correctly,
+//       verified_with_pharmacy
+//     } = req.body;
+
+//     await task.update({
+//       package_sealed,
+//       labeled_correctly,
+//       verified_with_pharmacy,
+//       pickup_time: new Date(),
+//       status: 'picked_up'
+//     });
+
+//     return res.json({
+//       success: true,
+//       message: 'Package picked successfully',
+//       data: task
+//     });
+
+//   } catch (err) {
+//     res.status(500).json({
+//       success: false,
+//       message: err.message
+//     });
+//   }
+// };
 
 
 
@@ -288,58 +422,58 @@ exports.acceptOrder = async (req, res) => {
 /*
 6) MARK DELIVERED
 */
-exports.markDelivered = async (req, res) => {
-  try {
-    const task = await DeliveryTask.findByPk(req.params.orderId);
+// exports.markDelivered = async (req, res) => {
+//   try {
+//     const task = await DeliveryTask.findByPk(req.params.orderId);
 
-    if (!task || task.rider_id !== req.user.id) {
-      return res.status(403).json({ success: false, message: 'Unauthorized or not found' });
-    }
+//     if (!task || task.rider_id !== req.user.id) {
+//       return res.status(403).json({ success: false, message: 'Unauthorized or not found' });
+//     }
 
-    // Update Task Status
-    await task.update({ 
-      status: 'delivered', 
-      delivered_at: new Date() 
-    });
+//     // Update Task Status
+//     await task.update({ 
+//       status: 'delivered', 
+//       delivered_at: new Date() 
+//     });
 
-    // Credit Rider Finance
-    const amount = Number(task.charges || 0);
-    if (amount > 0) {
-      let finance = await Finance.findOne({ where: { user_id: req.user.id } });
+//     // Credit Rider Finance
+//     const amount = Number(task.charges || 0);
+//     if (amount > 0) {
+//       let finance = await Finance.findOne({ where: { user_id: req.user.id } });
 
-      if (!finance) {
-        finance = await Finance.create({
-          user_id: req.user.id,
-          balance: 0,
-          trend: [],
-          recentPayouts: [],
-          transactionHistory: []
-        });
-      }
+//       if (!finance) {
+//         finance = await Finance.create({
+//           user_id: req.user.id,
+//           balance: 0,
+//           trend: [],
+//           recentPayouts: [],
+//           transactionHistory: []
+//         });
+//       }
 
-      const history = [...(finance.transaction_history || finance.transactionHistory || [])];
-      const trend = [...(finance.trend || [])];
+//       const history = [...(finance.transaction_history || finance.transactionHistory || [])];
+//       const trend = [...(finance.trend || [])];
 
-      history.unshift({ 
-        transType: 'Credit', 
-        amount: amount, 
-        reference: task.package_number,
-        date: new Date() 
-      });
-      trend.push(amount);
+//       history.unshift({ 
+//         transType: 'Credit', 
+//         amount: amount, 
+//         reference: task.package_number,
+//         date: new Date() 
+//       });
+//       trend.push(amount);
 
-      await finance.update({
-        balance: finance.balance + amount,
-        transaction_history: history,
-        trend: trend.slice(-12)
-      });
-    }
+//       await finance.update({
+//         balance: finance.balance + amount,
+//         transaction_history: history,
+//         trend: trend.slice(-12)
+//       });
+//     }
 
-    res.json({ success: true, message: 'Delivered and rider credited', data: task });
-  } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
-  }
-};
+//     res.json({ success: true, message: 'Delivered and rider credited', data: task });
+//   } catch (err) {
+//     res.status(500).json({ success: false, message: err.message });
+//   }
+// };
 
 /*
 9) GET ACCEPTED TASKS FOR CURRENT RIDER
