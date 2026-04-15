@@ -287,20 +287,44 @@ exports.markInTransit = async (req,res)=>{
   }
 };
 
-/*
-7) CANCEL ORDER
-*/
-exports.cancelOrder = async (req,res)=>{
-  try{
-    const task = await DeliveryTask.findByPk(req.params.orderId);
-    if(!task) return res.status(404).json({ success:false, message:'Not found' });
-    await task.update({ status:'cancelled' });
-    res.json({ success:true, message:'Cancelled', data:task });
-  }catch(err){
-    res.status(500).json({ success:false, message:err.message })
+
+exports.cancelOrder = async (req, res) => {
+  try {
+    const { orderId } = req.params;
+
+    // 1. Find the delivery task
+    const task = await DeliveryTask.findByPk(orderId);
+    if (!task) {
+      return res.status(404).json({ success: false, message: 'Delivery Task not found' });
+    }
+
+    const currentRiderId = task.rider_id;
+
+    // 2. Update the Delivery Task: reset to pending and remove the rider
+    await task.update({
+      status: 'pending',
+      rider_id: null,
+      accept_status: false
+    });
+
+    // 3. Update the Rider: set on_duty to false
+    if (currentRiderId) {
+      await User.update(
+        { on_duty: false },
+        { where: { id: currentRiderId } }
+      );
+    }
+
+    res.json({
+      success: true,
+      message: 'Order cancelled successfully. Delivery is back to pending and rider is off-duty.',
+      data: task
+    });
+
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
   }
 };
-
 /*
 8) UPDATE ORDER
 */
