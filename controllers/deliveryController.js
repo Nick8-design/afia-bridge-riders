@@ -127,3 +127,35 @@ exports.getPharmacyById = async (req, res) => {
     }
   };
 
+  exports.updateDeliveryTask = async (req, res) => {
+    try {
+      const { deliveryId } = req.params;
+      
+      // Find the delivery record first
+      const delivery = await DeliveryTask.findByPk(deliveryId);
+  
+      if (!delivery) {
+        return res.status(404).json({
+          success: false,
+          message: "Delivery task not found"
+        });
+      }
+  
+      // Update the record with the data from the request body
+      // This will only update the fields provided in req.body
+      await delivery.update(req.body);
+  
+      res.json({
+        success: true,
+        message: "Delivery updated successfully",
+        data: delivery
+      });
+  
+    } catch (err) {
+      // Handle specific Sequelize validation errors (e.g., Enum violations)
+      res.status(400).json({
+        success: false,
+        message: err.message
+      });
+    }
+  };
