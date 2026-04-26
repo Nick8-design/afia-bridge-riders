@@ -38,7 +38,7 @@ router.get('/task/:orderId', protect,serviceGuard, currentTask);
 router.put('/accept/:orderId', protect,serviceGuard, acceptOrder);
 router.put('/in-transit/:orderId', protect,serviceGuard, markInTransit);
 router.put('/deliver/:orderId', protect,serviceGuard, markDelivered);
-router.put('/cancel/:orderId', protect,serviceGuard, cancelOrder);
+router.post('/cancel/:orderId', protect,serviceGuard, cancelOrder);
 router.get('/active', protect, serviceGuard, getActiveTask);
 router.put('/update/:orderId', protect,serviceGuard, updateOrderDetails);
 
