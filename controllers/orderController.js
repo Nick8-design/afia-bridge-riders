@@ -288,46 +288,14 @@ exports.markInTransit = async (req,res)=>{
 };
 
 
-// exports.cancelOrder = async (req, res) => {
-//   try {
-//     const { orderId } = req.params;
-
-//     // 1. Find the delivery task
-//     const task = await DeliveryTask.findByPk(orderId);
-//     if (!task) {
-//       return res.status(404).json({ success: false, message: 'Delivery Task not found' });
-//     }
-
-//     const currentRiderId = task.rider_id;
-
-//     // 2. Update the Delivery Task: reset to pending and remove the rider
-//     await task.update({
-//       status: 'pending',
-//       rider_id: null,
-//       accept_status: false
-//     });
-
-//     // 3. Update the Rider: set on_duty to false
-//     if (currentRiderId) {
-//       await User.update(
-//         { on_duty: false },
-//         { where: { id: currentRiderId } }
-//       );
-//     }
-
-//     res.json({
-//       success: true,
-//       message: 'Order cancelled successfully. Delivery is back to pending and rider is off-duty.',
-//       data: task
-//     });
-
-//   } catch (err) {
-//     res.status(500).json({ success: false, message: err.message });
-//   }
-// };
 exports.cancelOrder = async (req, res) => {
   try {
     const { orderId } = req.params;
+    const { userId } = req.body; // Accept userId in body
+
+    if (!userId) {
+      return res.status(400).json({ success: false, message: 'User ID is required' });
+    }
 
     // 1. Find the delivery task
     const task = await DeliveryTask.findByPk(orderId);
@@ -335,10 +303,15 @@ exports.cancelOrder = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Delivery Task not found' });
     }
 
+    // Optional: Safety Check - Ensure the user canceling is the one assigned
+    if (task.rider_id && task.rider_id !== userId) {
+        return res.status(403).json({ success: false, message: 'Unauthorized: You are not the assigned rider' });
+    }
+
     // 2. Define cancellable states
     const cancellableStates = ['pending', 'assigned', 'accepted'];
 
-    // 3. Validation: Check if the current status allows cancellation
+    // 3. Validation
     if (!cancellableStates.includes(task.status)) {
       return res.status(400).json({ 
         success: false, 
@@ -346,31 +319,26 @@ exports.cancelOrder = async (req, res) => {
       });
     }
 
-    const currentRiderId = task.rider_id;
+    const currentRiderId = task.rider_id || userId;
 
-    // 4. Update the Delivery Task: reset to pending and remove the rider
-    // Note: If you want to mark it as 'cancelled' permanently, change status to 'cancelled'
-    // but based on your code, you are resetting it for another rider to pick up.
+    // 4. Update the Delivery Task
     await task.update({
       status: 'pending',
       rider_id: null,
       accept_status: false
     });
 
-    // 5. Update the Rider: set on_duty back to false (available for new tasks)
-    if (currentRiderId) {
-      await User.update(
-        { on_duty: false },
-        { where: { id: currentRiderId } }
-      );
-    }
+    // 5. Update the Rider
+    await User.update(
+      { on_duty: false },
+      { where: { id: currentRiderId } }
+    );
 
     res.json({
       success: true,
-      message: 'Order cancelled successfully. Delivery is back to pending and rider is available.',
+      message: 'Order cancelled successfully.',
       data: task
     });
-
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }
