@@ -3,6 +3,8 @@ const Finance = require('../models/Finance'); // Use Finance if that's your mode
 const Order = require('../models/Order');
 const Notification = require('../models/Notification');
 const { sequelize } = require("../database/db");
+// const DeliveryTask = require('../models/DeliveryTask'); // Your existing import
+const User = require('../models/Rider');
 /*
 Helper: check required fields
 */
