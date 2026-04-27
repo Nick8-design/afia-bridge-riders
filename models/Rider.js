@@ -266,7 +266,15 @@ const User = sequelize.define(
     pharmacy_id: {
       type: DataTypes.UUID,
     },
+    gps_lat: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
 
+    gps_lng: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
     created_at: {
       type: DataTypes.DATE,
       allowNull: false,

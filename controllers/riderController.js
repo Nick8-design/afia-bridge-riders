@@ -11,7 +11,51 @@ const jwt = require("jsonwebtoken");
 const Wallet = require('../models/Finance');
 const { v4: uuidv4 } = require('uuid');
 
+// const User = require("../models/User");
 
+exports.updateRiderLocation = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { gps_lat, gps_lng } = req.body;
+
+    // 1. Validation
+    if (!gps_lat || !gps_lng) {
+      return res.status(400).json({ 
+        success: false, 
+        message: "Both latitude and longitude are required." 
+      });
+    }
+
+    // 2. Find and update the rider
+    const rider = await User.findByPk(userId);
+
+    if (!rider) {
+      return res.status(404).json({ success: false, message: "Rider not found." });
+    }
+
+    // Optional: Ensure the user being updated is actually a rider
+    if (rider.role !== 'rider') {
+      return res.status(403).json({ success: false, message: "Only rider locations can be updated via this endpoint." });
+    }
+
+    await rider.update({
+      gps_lat: gps_lat.toString(),
+      gps_lng: gps_lng.toString()
+    });
+
+    res.json({
+      success: true,
+      message: "Location updated successfully.",
+      data: {
+        lat: rider.gps_lat,
+        lng: rider.gps_lng
+      }
+    });
+
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
 
 
 /*

@@ -13,8 +13,11 @@ const {
     getMyFinance, 
     credit,
     withdraw,
-    changePassword
+    changePassword,
+    updateRiderLocation
 } = require('../controllers/riderController');
+
+router.patch('/update-location/:userId', updateRiderLocation);
 router.put('/change-password', protect, changePassword);
 
 router.delete('/delete-account', protect, deleteMyAccount);
