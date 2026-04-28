@@ -31,7 +31,9 @@ const serviceGuard = (req,res,next)=>{
     "license_verified:", req.user.license_verified
   )
 
-  if(!isApproved || req.user.id_verified !== true || req.user.license_verified !== true){
+//  !isApproved ||
+ 
+ if(req.user.id_verified !== true || req.user.license_verified !== true){
     return res.status(403).json({
       success:false,
       code:"NOT_VERIFIED",
